@@ -4,8 +4,8 @@ See also :
 - [https://docs.microsoft.com/en-us/azure/aks/azure-disk-volume](https://docs.microsoft.com/en-us/azure/aks/azure-disk-volume)
 - [https://github.com/container-storage-interface/spec](https://github.com/container-storage-interface/spec)
 - [https://github.com/kubernetes-sigs/azuredisk-csi-driver](https://github.com/kubernetes-sigs/azuredisk-csi-driver)
-- [https://kubernetes-csi.github.io/dks/topology.html](https://kubernetes-csi.github.io/dks/topology.html)
-- [https://kubernetes-csi.github.io/dks/drivers.html](https://kubernetes-csi.github.io/dks/drivers.html)
+- [https://kubernetes-csi.github.io/docs/topology.html](https://kubernetes-csi.github.io/docs/topology.html)
+- [https://kubernetes-csi.github.io/docs/drivers.html](https://kubernetes-csi.github.io/docs/drivers.html)
 
 # Pre-req
 
@@ -19,38 +19,28 @@ The driver initialization depends on a Cloud provider config file, usually it's 
 
 ```sh
 
-# https://github.com/kubernetes-sigs/azuredisk-csi-driver/blob/master/dks/read-from-secret.md
+# https://github.com/kubernetes-sigs/azuredisk-csi-driver/blob/master/docs/read-from-secret.md
 mkdir deploy
 tenantId=$(az account show --query tenantId -o tsv)
 
-# https://kubernetes.io/dks/concepts/configuration/secret/#decoding-a-secret
 k get secrets -n kube-system
 k describe secret azure-cloud-provider -n kube-system
-azure_cnf_secret=$(k get secret azure-cloud-provider -n kube-system -o jsonpath="{.data.cloud-config}" | base64 --decode)
-echo "Azure Cloud Provider config secret " $azure_cnf_secret
 
-azure_cnf_secret_length=$(echo -n $azure_cnf_secret | wc -c)
-echo "Azure Cloud Provider config secret length " $azure_cnf_secret_length
-
-# This is quick & dirty, should be improved with a Regexp
-aadClientId="${azure_cnf_secret:13:36}"
-echo "aadClientId " $aadClientId
-
-aadClientSecret="${azure_cnf_secret:67:$azure_cnf_secret_length}"
-echo "aadClientSecret" $aadClientSecret
-
-# See https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/dks/cloud-provider-config.md#auth-configs
 echo -e "{\n"\
 "\""tenantId\"": \""$tenantId\"",\n"\
 "\""subscriptionId\"": \""$subId\"",\n"\
 "\""resourceGroup\"": \""$rg_name\"",\n"\
-"\""useManagedIdentityExtension\"": false,\n"\
-"\""aadClientId\"": \""$aadClientId\"",\n"\
-"\""aadClientSecret\"": \""$aadClientSecret\""\n"\
+"\""useManagedIdentityExtension\"": true\n"\
 "}\n"\
-> deploy/azure.json 
+> deploy/azure.json
 
-cat deploy/azure.json
+export AKS_SECRET=`cat deploy/azure.json | base64 | awk '{printf $0}'; echo`
+envsubst < ./cnf/azure-cloud-provider.yaml > deploy/azure-cloud-provider.yaml
+cat deploy/azure-cloud-provider.yaml
+
+k create -f ./deploy/azure-cloud-provider.yaml
+k get secrets -n kube-system
+k describe secret azure-cloud-provider -n kube-system
 
 ```
 

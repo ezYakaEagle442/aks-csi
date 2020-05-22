@@ -12,12 +12,11 @@ helm repo list
 # Init default repo: https://hub.helm.sh/charts
 helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 helm repo list
-helm search repo
-helm search hub
-helm search repo mongodb
+# helm search repo
+# helm search hub
+# helm search repo mongodb
 
 helm repo update
-
 
 # https://vmware-tanzu.github.io/helm-charts/
 helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts

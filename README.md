@@ -12,6 +12,7 @@ See also :
 
 - [Storage options for applications in AKS](https://docs.microsoft.com/en-us/azure/aks/concepts-storage)
 - [Best practices for storage and backups in AKS](https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-storage) 
+- [https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes)
 
 ## PV with CSI in AKS
 
@@ -40,8 +41,9 @@ When [enabled](https://kubernetes.io/docs/reference/command-line-tools-reference
 1. Setup [pre-requisites](setup-prereq.md)
    1. Create RG
    1. Create Storage
+   1. Generates your SSH keys
    1. Setup [Network](setup-network.md)
-1. Setup [AKS cluster](setup-aro.md)
+1. Setup [AKS cluster](setup-aks.md)
 1. Setup [HELM](setup-helm.md)
 1. Setup CSI drivers
    1. Setup [Azure Disk CSI driver](setup-store-CSI-driver-azure-disk.md)

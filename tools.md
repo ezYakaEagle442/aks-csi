@@ -198,10 +198,6 @@ set ts=2 sts=2 sw=2 et
 . ~/.vimrc
 ```
 
-## ARO tips
-
-[https://github.com/stuartatmicrosoft/azure-aro](https://github.com/stuartatmicrosoft/azure-aro)
-
 ## k9s
 K9s provides a terminal UI to interact with your Kubernetes clusters. The aim of this project is to make it easier to navigate, observe and manage your applications in the wild. K9s continually watches Kubernetes for changes and offers subsequent commands to interact with your observed resources.
 

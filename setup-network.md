@@ -22,15 +22,10 @@ See  :
 az network vnet create --name $vnet_name --resource-group $rg_name --address-prefixes 172.16.0.0/16 --location $location
 az network vnet subnet create --name $subnet_name --address-prefixes 172.16.1.0/24 --vnet-name $vnet_name --resource-group $rg_name 
 
-# extra subnet for new node pools : see https://github.com/Azure/AKS/issues/1338
-az network vnet subnet create --name $new_node_pool_subnet_name --address-prefixes 172.16.5.0/24 --vnet-name $vnet_name -g $rg_name 
-
 vnet_id=$(az network vnet show --resource-group $rg_name --name $vnet_name --query id -o tsv)
 echo "VNet Id :" $vnet_id	
 
 subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name $vnet_name --name $subnet_name --query id -o tsv)
 echo "Subnet Id :" $subnet_id	
-
-
 
 ```

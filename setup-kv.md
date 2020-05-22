@@ -22,6 +22,7 @@ az keyvault update --name $vault_name --default-action deny -g $rg_name
 
 kv_id=$(az keyvault show --name $vault_name -g $rg_name --query "id" --output tsv)
 echo "KeyVault ID :" $kv_id
+
 nslookup $vault_name.vault.azure.net
 
 ```
@@ -35,6 +36,5 @@ az network vnet list-endpoint-services -l $location
 # Allow AKS cluster
 az network vnet subnet update -g $rg_name --vnet-name $vnet_name --name $subnet_name --service-endpoints "Microsoft.KeyVault"
 az keyvault network-rule add --name $vault_name -g $rg_name --subnet $subnet_id
-# az keyvault network-rule add --name $vault_name -g $rg_name --ip-address "172.16.5.0/24"
 
 ```

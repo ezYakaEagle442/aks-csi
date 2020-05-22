@@ -2,15 +2,13 @@
 
 
 ```sh
-
 az aks create --name $cluster_name \
     --resource-group $rg_name \
-    --aks-custom-headers CustomizedUbuntu=aks-ubuntu-1804 \
     --node-count=1 \
     --node-vm-size Standard_F2s_v2 \
     --location $location \
     --vnet-subnet-id $subnet_id \
-    --service-cidr 10.42.0.0/24 \
+    --service-cidr $svc_cidr  \
     --dns-service-ip 10.42.0.10 \
     --kubernetes-version $version \
     --network-plugin $network_plugin \
@@ -22,7 +20,6 @@ az aks create --name $cluster_name \
     --ssh-key-value ~/.ssh/${ssh_key}.pub \
     --enable-managed-identity \
     --verbose
-
 ```
 
 ## Get AKS Credentials
@@ -31,13 +28,16 @@ Apply [KubeCtl alias](./tools#kube-tools)
 
 ```sh
 
+# if Kubectl is not installed you can get it running the command below :
+# az aks install-cli
+
 ls -al ~/.kube
 rm  ~/.kube/config
 
 az aks get-credentials --resource-group $rg_name --name $cluster_name --admin
 az aks show -n $cluster_name -g $rg_name
 
-aks_api_server_url=$(az aks show -n $cluster_name -g $rg_name --query 'Fqdn' -o tsv)
+aks_api_server_url=$(az aks show -n $cluster_name -g $rg_name --query 'fqdn' -o tsv)
 echo "AKS API server URL: " $aks_api_server_url
 
 ```
