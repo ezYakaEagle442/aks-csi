@@ -40,6 +40,14 @@ az aks show -n $cluster_name -g $rg_name
 aks_api_server_url=$(az aks show -n $cluster_name -g $rg_name --query 'fqdn' -o tsv)
 echo "AKS API server URL: " $aks_api_server_url
 
+managed_rg=$(az aks show --resource-group $rg_name --name $cluster_name --query nodeResourceGroup -o tsv)
+echo "CLUSTER_RESOURCE_GROUP:" $managed_rg
+
+aks_node_rg_id=$(az group show --name $managed_rg --query id)
+echo $aks_node_rg_id
+
+aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
+echo "AKS Cluster Identity Client ID " $aks_client_id
 ```
 
 
