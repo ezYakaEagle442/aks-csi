@@ -14,13 +14,26 @@ See also :
 - [Best practices for storage and backups in AKS](https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-storage) 
 - [https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes)
 
+
+
+| Term                              |      Definition      |
+|-----------------------------------|--------------------|
+| Container Storage Interface (CSI) | A specification attempting to establish an industry standard interface that Container Orchestration Systems (COs) can use to expose arbitrary storage systems to their containerized workloads.|
+| in-tree                           | Code that exists in the core Kubernetes repository. |
+| out-of-tree                       | Code that exists somewhere outside the core Kubernetes repository. |
+| CSI Volume Plugin | right-aligned | A new, in-tree volume plugin that acts as an adapter and enables out-of-tree, third-party CSI volume drivers to be used in Kubernetes. |
+| CSI Volume Driver | right-aligned | An out-of-tree CSI compatible implementation of a volume plugin that can be used in Kubernetes through the Kubernetes CSI Volume Plugin. |
+
+![Persistent storage integration ](./img/Persistent_storage_integration_with_k8s.png)
+
 ## PV with CSI in AKS
 
 See [CSI Design](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/storage/container-storage-interface.md)
 
 ![High-Level Architecture](./img/csi_design.png)
 
-1. [AKS does not ship with any CSI drivers](link to be provided ?) , it uses Kubernetes [PV framework](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) aka in-tree plugin. These volume plugins were “in-tree” meaning their code was part of the core k8s code and shipped with the core Kubernetes binaries.
+
+1. AKS does not ship with any CSI drivers, it uses Kubernetes [PV framework](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) aka in-tree plugin. These volume plugins were “in-tree” meaning their code was part of the core k8s code and shipped with the core Kubernetes binaries.
 
 2. AKS supports :
    - kubernetes.io/azure-disk kubernetes.io/azure-file & provisioners
