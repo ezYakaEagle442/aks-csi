@@ -21,8 +21,8 @@ See also :
 | Container Storage Interface (CSI) | A specification attempting to establish an industry standard interface that Container Orchestration Systems (COs) can use to expose arbitrary storage systems to their containerized workloads.|
 | in-tree                           | Code that exists in the core Kubernetes repository. |
 | out-of-tree                       | Code that exists somewhere outside the core Kubernetes repository. |
-| CSI Volume Plugin | right-aligned | A new, in-tree volume plugin that acts as an adapter and enables out-of-tree, third-party CSI volume drivers to be used in Kubernetes. |
-| CSI Volume Driver | right-aligned | An out-of-tree CSI compatible implementation of a volume plugin that can be used in Kubernetes through the Kubernetes CSI Volume Plugin. |
+| CSI Volume Plugin                 | A new, in-tree volume plugin that acts as an adapter and enables out-of-tree, third-party CSI volume drivers to be used in Kubernetes. |
+| CSI Volume Driver                 | An out-of-tree CSI compatible implementation of a volume plugin that can be used in Kubernetes through the Kubernetes CSI Volume Plugin. |
 
 ![Persistent storage integration ](./img/Persistent_storage_integration_with_k8s.png)
 
