@@ -5,8 +5,8 @@
 ## AKS Core variables
 ```sh
 
-# Target version : 1.16.7
-version=$(az aks get-versions -l $location --query 'orchestrators[-4].orchestratorVersion' -o tsv) 
+# Target version : 1.17.3 to leverage PV Snapshot & Volume Limits
+version=$(az aks get-versions -l $location --query 'orchestrators[-3].orchestratorVersion' -o tsv) 
 echo "version is :" $version 
 
 appName="strcsi" 
