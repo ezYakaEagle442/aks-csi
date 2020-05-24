@@ -1,58 +1,79 @@
 See also :
 
+- [Azure Storage accounts](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-overview?toc=%2Fazure%2Fstorage%2Ffiles%2Ftoc.json#types-of-storage-accounts)
+- [Azure Storage availability in your region](https://azure.microsoft.com/en-gb/global-infrastructure/services/?regions=france-central,france-south,europe-west,europe-north&products=storage)
+- [https://docs.microsoft.com/en-us/azure/storage/files](https://docs.microsoft.com/en-us/azure/storage/files)
 - [https://docs.microsoft.com/en-us/azure/aks/azure-files-dynamic-pv](https://docs.microsoft.com/en-us/azure/aks/azure-files-dynamic-pv)
 - [https://docs.microsoft.com/en-us/azure/aks/azure-files-volume](https://docs.microsoft.com/en-us/azure/aks/azure-files-volume)
-- [https://dks.openshift.com/aro/4/storage/understanding-persistent-storage.html#types-of-persistent-volumes_understanding-persistent-storage](https://dks.openshift.com/aro/4/storage/understanding-persistent-storage.html#types-of-persistent-volumes_understanding-persistent-storage)
-- [https://dks.openshift.com/aro/4/storage/persistent_storage/persistent-storage-azure-file.html](https://dks.openshift.com/aro/4/storage/persistent_storage/persistent-storage-azure-file.htmle)
 - [https://github.com/container-storage-interface/spec](https://github.com/container-storage-interface/spec)
 - [https://github.com/kubernetes-sigs/azurefile-csi-driver](https://github.com/kubernetes-sigs/azurefile-csi-driver)
-- [https://kubernetes-csi.github.io/dks/topology.html](https://kubernetes-csi.github.io/dks/topology.html)
-- [https://kubernetes-csi.github.io/dks/drivers.html](https://kubernetes-csi.github.io/dks/drivers.html)
+- [https://kubernetes-csi.github.io/docs/topology.html](https://kubernetes-csi.github.io/dks/topology.html)
+- [https://kubernetes-csi.github.io/docs/drivers.html](https://kubernetes-csi.github.io/dks/drivers.html)
 
 # Pre-req
 
 See :
-- [install guide](https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/dks/install-azurefile-csi-driver.md)
-- Available [sku](https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/dks/driver-parameters.md) are : Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS, Premium_LRS
+- [install guide](https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/docs/install-azurefile-csi-driver.md)
+- Available [sku](https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/docs/driver-parameters.md) are : Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS, Premium_LRS
 - [Pre-req](https://github.com/kubernetes-sigs/azurefile-csi-driver#prerequisite) : The driver initialization depends on a Cloud provider config file.
 
 The driver initialization depends on a Cloud provider config file, usually it's /etc/kubernetes/azure.json on all kubernetes nodes deployed by AKS or aks-engine, here is azure.json example. This driver also supports read cloud config from kuberenetes secret.
 
+## Azure Cloud Provider
+
+The step below is not mandatory as the config should be fetch sucessfully in AKS from /etc/kubernetes/azure.json
+
 ```sh
 
-# https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/dks/read-from-secret.md
+# https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/docs/read-from-secret.md
 mkdir deploy
 tenantId=$(az account show --query tenantId -o tsv)
 
-# https://kubernetes.io/dks/concepts/configuration/secret/#decoding-a-secret
 k get secrets -n kube-system
 k describe secret azure-cloud-provider -n kube-system
-azure_cnf_secret=$(k get secret azure-cloud-provider -n kube-system -o jsonpath="{.data.cloud-config}" | base64 --decode)
-echo "Azure Cloud Provider config secret " $azure_cnf_secret
-
-azure_cnf_secret_length=$(echo -n $azure_cnf_secret | wc -c)
-echo "Azure Cloud Provider config secret length " $azure_cnf_secret_length
-
-aadClientId="${azure_cnf_secret:14:35}"
-echo "aadClientId " $aadClientId
-
-aadClientSecret="${azure_cnf_secret:53:$azure_cnf_secret_length}"
-echo "aadClientSecret" $aadClientSecret
 
 echo -e "{\n"\
 "\""tenantId\"": \""$tenantId\"",\n"\
 "\""subscriptionId\"": \""$subId\"",\n"\
 "\""resourceGroup\"": \""$rg_name\"",\n"\
-"\""useManagedIdentityExtension\"": false,\n"\
-"\""aadClientId\"": \""$aadClientId\"",\n"\
-"\""aadClientSecret\"": \""$aadClientSecret\""\n"\
+"\""useManagedIdentityExtension\"": true\n"\
 "}\n"\
-> deployazure.json
+> deploy/azure.json
 
-cat deploy/azure.json
+export AKS_SECRET=`cat deploy/azure.json | base64 | awk '{printf $0}'; echo`
+envsubst < ./cnf/azure-cloud-provider.yaml > deploy/azure-cloud-provider.yaml
+cat deploy/azure-cloud-provider.yaml
+
+k create -f ./deploy/azure-cloud-provider.yaml
+k get secrets -n kube-system
+k describe secret azure-cloud-provider -n kube-system
 
 ```
 
+# Check the existing storage Class & Drivers
+
+```sh
+k get sc
+k describe sc azurefile # kubernetes.io/azure-file
+k describe sc azurefile-premium #kubernetes.io/azure-file
+k describe sc default # kubernetes.io/azure-disk
+k describe sc managed-premium # kubernetes.io/azure-disk
+```
+
+## Perform role assignments
+
+[Azure Files](https://docs.microsoft.com/en-us/azure/aks/azure-files-dynamic-pv) supports Premium storage in AKS clusters, minimum premium file share is **100GB**.
+
+```sh
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor
+az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
+az role assignment create --role "Virtual Machine Contributor" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
+
+az role assignment create --role "Contributor" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_name
+az role assignment create --role "Contributor" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
+
+```
 
 # Install the Azure File CSI Driver
 
@@ -75,6 +96,9 @@ k get deploy -n kube-system | grep -i "azurefile"
 k get rs -n kube-system | grep -i "azurefile"
 k get po -n kube-system | grep -i "azurefile"
 k get sc -A
+
+k describe clusterrole csi-azurefile-controller-secret-role
+k describe clusterrolebinding csi-azurefile-controller-secret-binding
 
 # k get pod -n kube-system -l app=csi-azurefile-controller -o wide --watch 
 # k get pod -n kube-system -l app=csi-azurefile-node -o wide --watch 
@@ -105,28 +129,37 @@ done
 ### [Troubleshoot](https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/dks/csi-debug.md)
 
 If the logs show failed to get Azure Cloud Provider, ***error: Failed to load config from file: /etc/kubernetes/azure.json***, cloud not get azure cloud provider
-it means that you have the cloud provider config file is not correctly set at /etc/kubernetes/azure.json in AKS, or not correctly paramtered in the driver yaml file as explained in the [pre-req](#Pre-req)
+it means that you have the cloud provider config file is not correctly set at /etc/kubernetes/azure.json in AKS, or not correctly parametered in the driver yaml file as explained in the [pre-req](#Pre-req)
 
 
 ## Test Azure File CSI Driver
 See examples :
 - [basic usage](https://github.com/kubernetes-sigs/azurefile-csi-driver/blob/master/deploy/example/e2e_usage.md)
 
-
+### Option 1: Dynamic Provisioning
 ```sh
-# Option 1: Dynamic Provisioning
+
 k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/storageclass-azurefile-csi.yaml
 k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/pvc-azurefile-csi.yaml
 
-# Option 2: Static Provisioning(use an existing azure file share)
+k get sc -A
+k describe sc file.csi.azure.com
+```
+
+### Option 2: Static Provisioning (use an existing azure file share)
+```sh
 # k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/storageclass-azurefile-existing-share.yaml
 
 # Create an Azure File
-str_name="stwefile""${appName,,}"
-az storage account create --name $str_name --kind FileStorage --sku Premium_ZRS --lkation $lkation -g $rg_name 
+str_name="stfrfile""${appName,,}"
+
+# Premium Files are not available in all Azure Regions,
+# See : https://github.com/kubernetes-sigs/azurefile-csi-driver/issues/291
+# az storage account create --name $str_name --kind FileStorage --sku Premium_LRS --location $location -g $rg_name 
+az storage account create --name $str_name --kind StorageV2 --sku Standard_LRS --location $location -g $rg_name 
 az storage account list -g $rg_name
 
-fs_share_name=arofs
+fs_share_name=aksfs
 az storage share create --name $fs_share_name --account-name $str_name
 az storage share list --account-name $str_name
 az storage share show --name $fs_share_name --account-name $str_name
@@ -147,30 +180,54 @@ export SHARE_NAME=$fs_share_name
 envsubst < ./cnf/storageclass-azurefile-existing-share.yaml > deploy/storageclass-azurefile-existing-share.yaml
 cat deploy/storageclass-azurefile-existing-share.yaml
 
-k create -f ./cnf/storageclass-azurefile-existing-share.yaml
-k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/pvc-azurefile-csi.yaml
-
-# validate PVC status and create an nginx pod
-k describe pvc pvc-azurefile -w
-k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/nginx-pod-azurefile.yaml
-
-# enter the pod container to do validation
-k describe po nginx-azurefile -w
-k exec -it nginx-azurefile -- bash
-# /mnt/azurefile directory should be mounted as cifs filesystem
+k create -f ./deploy/storageclass-azurefile-existing-share.yaml
+k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/pvc-azurefile-csi-static.yaml
+            
+k describe sc file.csi.azure.com
 
 ```
 
-## Clean-Up
+### Test Volume Mount
+```sh
+# validate PVC status and create an nginx pod
+k describe pvc pvc-azurefile
+k create -f https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/deploy/example/nginx-pod-azurefile.yaml
+k get events -n kube-system | grep -i "Error" 
+
+# enter the pod container to do validation
+k describe po nginx-azurefile
+k exec -it nginx-azurefile -- bash
+# run the command below inside the container
+c # /mnt/azurefile directory should mounted as File System
+cat  /mnt/azurefile/outfile
+```
+
+## Snapshot
+
+- [PV Snapshot](https://kubernetes-csi.github.io/docs/snapshot-restore-feature.html) is supported (beta since k8s v1.17)
+- [https://github.com/kubernetes-sigs/azurefile-csi-driver/tree/master/deploy/example/snapshot](https://github.com/kubernetes-sigs/azurefile-csi-driver/tree/master/deploy/example/snapshot)
+- [https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates)
+
+To be tested !
+```sh
+
+# cat /etc/systemd/system/kubelet.service
+# cat /etc/default/kubelet
+# cat /var/lib/kubelet/kubeconfig
+
+az snapshot create --name PV1Snapsho --source $pv1 -g $rg_name
+
+```
+
+# Clean-Up
 ```sh
 az storage share delete --name $fs_share_name --account-name $str_name
 az storage account delete --name $str_name -g $rg_name -y
 
-k delete sc file.csi.azure.com
+k delete pod nginx-azurefile
 k delete pvc pvc-azurefile
 k delete pv pv-azurefile
-k delete pods xxx
-
+k delete sc file.csi.azure.com
 curl -skSL https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/$driver_version/deploy/uninstall-driver.sh | bash -s --
 
 ```
