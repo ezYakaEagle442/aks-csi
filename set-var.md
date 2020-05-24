@@ -21,7 +21,7 @@ storage_name="stfr""${appName,,}"
 echo "Storage name:" $storage_name
 
 rg_name="rg-${appName}-${location}" 
-echo "ARO RG name:" $rg_name 
+echo "AKS RG name:" $rg_name 
 
 cluster_name="aks-${appName}-101" #aks-<App Name>-<Environment>-<###>
 echo "Cluster name:" $cluster_name

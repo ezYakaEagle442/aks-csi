@@ -8,7 +8,7 @@ See :
 
 ```sh
 
-oc create namespace kasten-io
+k create namespace kasten-io
 
 helm install k10 kasten/k10 --namespace=kasten-io \
     --set secrets.azureTenantId=<tenantID> \
