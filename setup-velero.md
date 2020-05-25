@@ -6,6 +6,7 @@ See :
 - [https://velero.io/docs/v1.3.2/supported-providers/](https://velero.io/docs/v1.3.2/supported-providers/)
 
 
+[Container Storage Interface Snapshot Support in Velero](https://velero.io/docs/v1.3.2/csi/) is under development. Documentation may not be up-to-date and features may not work as expected.
 
 <span style="color:red">/!\ IMPORTANT </span> : 
 
@@ -54,17 +55,60 @@ tenantId=$(az account show --query tenantId -o tsv)
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
 
+# When Managed Identities is NOT enabled on AKS
 cat << EOF > ./credentials-velero
 AZURE_SUBSCRIPTION_ID=${subId}
 AZURE_TENANT_ID=${tenantId}
 AZURE_CLIENT_ID=${aks_client_id}
-AZURE_CLIENT_SECRET=${velero_sp_password}
+AZURE_CLIENT_SECRET=${aks_secret}
 AZURE_RESOURCE_GROUP=${rg_name}
 AZURE_CLOUD_NAME=AzurePublicCloud
 EOF
 
+```
+
+## Create Pod identity
+
+[https://github.com/vmware-tanzu/velero-plugin-for-microsoft-azure/issues/12](https://github.com/vmware-tanzu/velero-plugin-for-microsoft-azure/issues/12)
+[https://github.com/vmware-tanzu/velero-plugin-for-microsoft-azure/issues/46](https://github.com/vmware-tanzu/velero-plugin-for-microsoft-azure/issues/46)
+```sh
+
+# When Managed Identities is enabled on AKS: not yet supported in Velero ?
+echo -e "\""AZURE_TENANT_ID\""=\""$tenantId\"",\n"\
+"\""AZURE_SUBSCRIPTION_ID\""=\""$subId\"",\n"\
+"\""AZURE_RESOURCE_GROUP\""=\""$rg_name\"",\n"\
+"\""AZURE_CLOUD_NAME\""=\""AzurePublicCloud\"",\n"\
+"\""useManagedIdentityExtension\""=true\n"
+> ./deploy/credentials-velero
+
 cat ./credentials-velero
 
+export IDENTITY_NAME="velero-pod-identity" #  must consist of lower case 
+
+rg_id=$(az group show --name $rg_name --query id)
+echo "RG ID : "  $rg_id
+
+az identity create -n $IDENTITY_NAME -g $rg_name
+export IDENTITY_CLIENT_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query clientId -otsv)"
+export IDENTITY_RESOURCE_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query id -otsv)"
+export IDENTITY_ASSIGNMENT_ID="$(az role assignment create --role Reader --assignee $IDENTITY_CLIENT_ID --scope /subscriptions/$subId/resourceGroups/$rg_name --query id -o tsv)"
+
+export ResourceID=$IDENTITY_RESOURCE_ID
+export ClientID=$IDENTITY_CLIENT_ID
+envsubst < ./cnf/velero-pod-identity.yaml > deploy/velero-pod-identity.yaml
+cat deploy/velero-pod-identity.yaml
+
+k apply -f deploy/velero-pod-identity.yaml -n $target_namespace
+k get azureidentity -A
+k get azureidentitybindings -A
+k get azureassignedidentities -A
+
+# Role Assignment : to be checked
+az role assignment create --role "Contributor" --assignee $IDENTITY_CLIENT_ID --scope $rg_id
+az role assignment list --assignee $IDENTITY_CLIENT_ID --scope $rg_id
+
+az role assignment create --role "Contributor" --assignee $IDENTITY_CLIENT_ID --scope $aks_node_rg_id
+az role assignment list --assignee $IDENTITY_CLIENT_ID --scope $aks_node_rg_id
 ```
 
 ## Download Velero
@@ -152,15 +196,16 @@ do
 done
 
 
-#for secret in $(k get secrets -n $velero_ns -o custom-columns=:metadata.name | grep -i "velero")
-#do
-#  k describe secret $secret -n $velero_ns
-#  echo -e "\n"
-#  velero_secret=$(k get secret $secret -n $velero_ns -o jsonpath="{.data.token}" | base64 --decode)
-#  echo "Velero secret " 
-#  echo -e "\n"
-#  echo $velero_secret
-#done
+for secret in $(k get secrets -n $velero_ns -o custom-columns=:metadata.name)
+do
+  #k describe secret $secret -n $velero_ns
+  echo -e "\n"
+  # velero_secret=$(k get secret $secret -n $velero_ns -o jsonpath="{.data.token}" | base64 --decode)
+  velero_secret=$(k get secret $secret -n $velero_ns -o jsonpath="{.data.cloud}" | base64 --decode)
+  echo "Velero secret " 
+  echo -e "\n"
+  echo $velero_secret
+done
 
 
 ```
