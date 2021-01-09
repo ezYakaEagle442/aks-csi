@@ -107,8 +107,8 @@ k get events -n kube-system | grep -i "Error"
 
 for pod in $(k get pods -l app=csi-azurefile-controller -n kube-system -o custom-columns=:metadata.name)
 do
-	k describe pod $pod -n kube-system | grep -i "Error"
-	k logs $pod -c csi-provisioner -n kube-system | grep -i "Error"
+    k describe pod $pod -n kube-system | grep -i "Error"
+    k logs $pod -c csi-provisioner -n kube-system | grep -i "Error"
     k logs $pod -c csi-attacher -n kube-system | grep -i "Error"
     k logs $pod -c csi-snapshotter -n kube-system | grep -i "Error"
     k logs $pod -c csi-resizer -n kube-system | grep -i "Error"
@@ -118,7 +118,7 @@ done
 
 for pod in $(k get pods -l app=csi-azurefile-node -n kube-system -o custom-columns=:metadata.name)
 do
-	k describe pod $pod -n kube-system | grep -i "Error"
+    k describe pod $pod -n kube-system | grep -i "Error"
     k logs $pod -c liveness-probe -n kube-system #| grep -i "Error"
     k logs $pod -c node-driver-registrar # | grep -i "Error"
     k logs $pod -c azurefile -n kube-system # | grep -i "Error"

@@ -5,6 +5,7 @@
 az aks create --name $cluster_name \
     --resource-group $rg_name \
     --node-count=1 \
+    --zones 1 2 3 \
     --node-vm-size Standard_F2s_v2 \
     --location $location \
     --vnet-subnet-id $subnet_id \
@@ -48,6 +49,7 @@ echo $aks_node_rg_id
 
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
+
 ```
 
 
@@ -56,6 +58,11 @@ echo "AKS Cluster Identity Client ID " $aks_client_id
 ```sh
 az aks list -o table
 kubectl cluster-info
+
+kubectl get nodes
+
+# https://docs.microsoft.com/en-us/azure/aks/availability-zones#verify-node-distribution-across-zones
+kubectl describe nodes | grep -e "Name:" -e "failure-domain.beta.kubernetes.io/zone"
 
 ```
 

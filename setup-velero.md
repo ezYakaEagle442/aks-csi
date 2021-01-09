@@ -140,14 +140,17 @@ AZURE_BACKUP_RESOURCE_GROUP="rg-backup-${appName}-${location}"
 az group create --name $AZURE_BACKUP_RESOURCE_GROUP --location $location
 
 # https://github.com/vmware-tanzu/velero-plugin-for-microsoft-azure#setup
+# https://velero.io/docs/v1.3.2/csi/ & https://github.com/vmware-tanzu/velero-plugin-for-csi 
 velero install \
     --provider azure \
-    --plugins velero/velero-plugin-for-microsoft-azure:v1.0.1 \
+    --plugins velero/velero-plugin-for-microsoft-azure:v1.0.1 velero/velero-plugin-for-csi:v0.1.0 \
+    --features EnableCSI \
     --bucket $BLOB_CONTAINER \
     --secret-file ./credentials-velero \
     --backup-location-config resourceGroup=$AZURE_BACKUP_RESOURCE_GROUP,storageAccount=$AZURE_STORAGE_ACCOUNT_ID,subscriptionId=$AZURE_BACKUP_SUBSCRIPTION_ID \
     --snapshot-location-config apiTimeout=$SNAPSHOT_TIMEOUT,resourceGroup=$AZURE_BACKUP_RESOURCE_GROUP,subscriptionId=$AZURE_BACKUP_SUBSCRIPTION_ID
 
+velero plugin get
 
 # Install and configure the server components: https://vmware-tanzu.github.io/helm-charts/
 velero_ns="velero"
@@ -222,7 +225,8 @@ helm ls -n $velero_ns -o yaml
 
 # https://velero.io/docs/v1.3.2/uninstalling/
 
-k delete namespace $velero_ns clusterrolebinding/velero
+k delete namespace $velero_ns
+k delete clusterrolebinding/velero
 k delete crds -l component=velero
-
+k delete crds -l app.kubernetes.io/name=velero
 ```

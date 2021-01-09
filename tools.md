@@ -39,7 +39,7 @@ Ex: run CloudShell in France Central Region if you plan do deploy your resources
 ```sh
 # https://chocolatey.org/packages/wsl
 choco install wsl --Yes --confirm --accept-license --verbose 
-
+choco install wsl-ubuntu-1804 --Yes --confirm --accept-license --verbose
 ```
 
 ## How to install tools into Subsystem for Linux (WSL)
@@ -64,6 +64,27 @@ kubectl api-versions
 choco install git.install --Yes --confirm --accept-license
 
 ```
+### Git Troubleshoot
+
+[https://www.illuminiastudios.com/dev-diaries/ssh-on-windows-subsystem-for-linux](https://www.illuminiastudios.com/dev-diaries/ssh-on-windows-subsystem-for-linux)
+[https://help.github.com/en/enterprise/2.20/user/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent](https://help.github.com/en/enterprise/2.20/user/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+Check the fingerprint of you SSK key in GitHub with the SSH Key used by git.
+
+If your GIT repo URL starts with HTTPS (ex: "https://github.com/<!XXXyour-git-homeXXX!/spring-petclinic.git"), git CLI will always prompt for password.
+When MFA is enabled on GitHub and that you plan to use SSH Keys, you have to use: 
+git clone git@github.com:your-git-home/spring-petclinic.git
+
+```sh
+eval `ssh-agent -s`
+eval $(ssh-agent -s) 
+sudo service ssh status
+# sudo service ssh --full-restart
+ssh-add /home/~username/.ssh/githubkey
+ssh-keygen -l -E MD5 -f /home/~username/.ssh/githubkey
+ssh -T git@github.com
+```
+
 
 ## How to install AZ CLI with Chocolatey
 ```sh

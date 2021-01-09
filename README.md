@@ -62,6 +62,7 @@ When [enabled](https://kubernetes.io/docs/reference/command-line-tools-reference
    1. Setup [Azure Disk CSI driver](setup-store-CSI-driver-azure-disk.md)
    1. Setup [Azure File CSI driver](setup-store-CSI-driver-azure-file.md)
    1. Setup [Secret StoreCSI driver](setup-store-CSI-driver-secrets.md)
+1. Integrate [Azure App Configuration with AKS deployment using HELM](https://docs.microsoft.com/en-us/azure/azure-app-configuration/integrate-kubernetes-deployment-helm)
 1. Setup BackUp Tools
    1. Setup [Velero](setup-velero.md)
    1. Setup [Kasten](setup-kasten.md)

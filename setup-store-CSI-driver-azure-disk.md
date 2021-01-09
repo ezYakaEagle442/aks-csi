@@ -1,5 +1,7 @@
 See also :
 
+- [Azure Storage accounts](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-overview?toc=%2Fazure%2Fstorage%2Ffiles%2Ftoc.json#types-of-storage-accounts)
+- [Azure Storage availability in your region](https://azure.microsoft.com/en-gb/global-infrastructure/services/?regions=france-central,france-south,europe-west,europe-north&products=storage)
 - [https://docs.microsoft.com/en-us/azure/aks/azure-disks-dynamic-pv](https://docs.microsoft.com/en-us/azure/aks/azure-disks-dynamic-pv)
 - [https://docs.microsoft.com/en-us/azure/aks/azure-disk-volume](https://docs.microsoft.com/en-us/azure/aks/azure-disk-volume)
 - [https://github.com/container-storage-interface/spec](https://github.com/container-storage-interface/spec)
@@ -147,7 +149,7 @@ k create -f https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driv
 
 # Create a disk
 disk_name="aks-dsk"
-az disk create --name $disk_name --sku Premium_LRS --size-gb 5 --zone 1 --location $location -g $managed_rg 
+az disk create --name $disk_name --location $location -g $managed_rg --sku Premium_LRS --size-gb 5 # --zone 1 
 az disk list -g $managed_rg
 disk_id=$(az disk show --name $disk_name -g $managed_rg --query id)
 
